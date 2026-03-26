@@ -1,0 +1,100 @@
+{
+  "server": {
+    "host": "0.0.0.0",
+    "port": 4010
+  },
+  "probes": {
+    "enabled": true,
+    "host": "0.0.0.0",
+    "ports": [
+      8099,
+      9990
+    ],
+    "responseVariant": "vmix"
+  },
+  "shim": {
+    "enabled": true,
+    "host": "0.0.0.0",
+    "port": 9910,
+    "identity": {
+      "productIdentifier": "ATEM Constellation 8K",
+      "model": "Constellation8K",
+      "protocolVersion": "V9_6",
+      "videoMode": "P1080p50"
+    }
+  },
+  "source": {
+    "type": "simulator",
+    "simulator": {
+      "modelName": "ATEM Production Studio 4K (simulated)",
+      "autoStart": true,
+      "intervalMs": 3000,
+      "startProgramInput": 1,
+      "startPreviewInput": 2,
+      "sequence": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "inputs": [
+        {
+          "id": 1,
+          "name": "Cam 1",
+          "longName": "Camera 1",
+          "tallyChannel": 1
+        },
+        {
+          "id": 2,
+          "name": "Cam 2",
+          "longName": "Camera 2",
+          "tallyChannel": 2
+        },
+        {
+          "id": 3,
+          "name": "Cam 3",
+          "longName": "Camera 3",
+          "tallyChannel": 3
+        },
+        {
+          "id": 4,
+          "name": "Cam 4",
+          "longName": "Camera 4",
+          "tallyChannel": 4
+        }
+      ]
+    },
+    "atem": {
+      "host": "192.168.10.240",
+      "port": 9910,
+      "mixEffect": 0,
+      "modelNameOverride": "ATEM Constellation 8K",
+      "fallbackInputs": [
+        {
+          "id": 1,
+          "name": "Cam 1",
+          "longName": "Camera 1",
+          "tallyChannel": 1
+        },
+        {
+          "id": 2,
+          "name": "Cam 2",
+          "longName": "Camera 2",
+          "tallyChannel": 2
+        },
+        {
+          "id": 3,
+          "name": "Cam 3",
+          "longName": "Camera 3",
+          "tallyChannel": 3
+        },
+        {
+          "id": 4,
+          "name": "Cam 4",
+          "longName": "Camera 4",
+          "tallyChannel": 4
+        }
+      ]
+    }
+  }
+}

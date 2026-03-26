@@ -1,0 +1,12 @@
+node_modules/
+dist/
+
+# Local runtime configuration
+config.json
+
+# Captures and logs
+*.pcap
+*.log
+
+# OS/editor noise
+.DS_Store

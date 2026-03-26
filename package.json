@@ -1,0 +1,24 @@
+{
+  "name": "tallybridge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Prototype bridge between a real ATEM switcher and Ethernet tally clients.",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc --project tsconfig.json",
+    "start": "node dist/src/index.js",
+    "test": "node --import tsx --test test/**/*.test.ts"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "@types/node": "^24.6.1",
+    "tsx": "^4.20.6",
+    "typescript": "^6.0.2"
+  },
+  "dependencies": {
+    "atem-connection": "^3.9.0"
+  }
+}
