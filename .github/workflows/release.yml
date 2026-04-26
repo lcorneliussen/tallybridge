@@ -1,0 +1,61 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - v*
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build project
+        run: npm run build
+
+      - name: Install production dependencies
+        run: npm ci --omit=dev
+
+      - name: Validate tag matches package version
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          TAG="${GITHUB_REF_NAME#v}"
+          test "$VERSION" = "$TAG"
+
+      - name: Build release bundle
+        run: bash scripts/build-release-bundle.sh
+
+      - name: Build Debian package
+        run: bash scripts/build-deb.sh
+
+      - name: Render Homebrew formula
+        env:
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.event.repository.name }}
+        run: bash scripts/render-homebrew-formula.sh
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            out/*.tar.gz
+            out/*.deb
+            out/*.rb

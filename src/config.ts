@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises'
+import { homedir } from 'node:os'
 import path from 'node:path'
 import { Enums } from 'atem-connection'
 
@@ -89,27 +90,29 @@ const defaultConfig: AppConfig = {
 }
 
 export async function loadConfig(configPath?: string): Promise<AppConfig> {
-  const resolvedPath = configPath
-    ? path.resolve(configPath)
-    : path.resolve(process.cwd(), 'config.json')
+  const resolvedPaths = buildConfigSearchPaths(configPath)
 
-  try {
-    const rawConfig = await readFile(resolvedPath, 'utf8')
-    const parsed = JSON.parse(rawConfig) as LegacyAppConfig
-    return mergeConfig(parsed)
-  } catch (error) {
-    const isMissing =
-      typeof error === 'object' &&
-      error !== null &&
-      'code' in error &&
-      error.code === 'ENOENT'
+  for (const resolvedPath of resolvedPaths) {
+    try {
+      const rawConfig = await readFile(resolvedPath, 'utf8')
+      const parsed = JSON.parse(rawConfig) as LegacyAppConfig
+      return mergeConfig(parsed)
+    } catch (error) {
+      const isMissing =
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        error.code === 'ENOENT'
 
-    if (isMissing) {
-      return structuredClone(defaultConfig)
+      if (isMissing) {
+        continue
+      }
+
+      throw error
     }
-
-    throw error
   }
+
+  return structuredClone(defaultConfig)
 }
 
 function mergeConfig(parsed: LegacyAppConfig): AppConfig {
@@ -185,4 +188,18 @@ function isEnumKey<TEnum extends object>(
   enumObject: TEnum
 ): value is Extract<keyof TEnum, string> {
   return typeof value === 'string' && value in enumObject
+}
+
+function buildConfigSearchPaths(configPath?: string): string[] {
+  const candidates = [
+    configPath ? path.resolve(configPath) : undefined,
+    process.env.CONFIG_PATH ? path.resolve(process.env.CONFIG_PATH) : undefined,
+    path.resolve(process.cwd(), 'config.json'),
+    path.resolve(homedir(), '.config', 'tallybridge', 'config.json'),
+    '/etc/tallybridge/config.json'
+  ]
+
+  return candidates.filter((candidate, index): candidate is string => {
+    return typeof candidate === 'string' && candidates.indexOf(candidate) === index
+  })
 }

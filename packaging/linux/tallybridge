@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+export CONFIG_PATH="${CONFIG_PATH:-/etc/tallybridge/config.json}"
+cd /opt/tallybridge
+exec node /opt/tallybridge/dist/src/index.js

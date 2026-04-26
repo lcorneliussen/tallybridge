@@ -1,0 +1,15 @@
+[Unit]
+Description=Tallybridge ATEM-to-Hollyland bridge
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+Environment=CONFIG_PATH=/etc/tallybridge/config.json
+ExecStart=/usr/bin/tallybridge
+Restart=always
+RestartSec=2
+WorkingDirectory=/opt/tallybridge
+
+[Install]
+WantedBy=multi-user.target

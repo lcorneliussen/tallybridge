@@ -40,6 +40,7 @@ The control server defaults to `http://0.0.0.0:4010`.
 The fake ATEM shim defaults to `udp://0.0.0.0:9910`.
 The TCP probes default to `tcp://0.0.0.0:8099` and `tcp://0.0.0.0:9990`.
 The default probe response mode is `vmix`, because Hollyland is polling `TALLY` on the same port and command shape that vMix documents for its TCP API.
+The config loader checks `CONFIG_PATH`, then `./config.json`, then `~/.config/tallybridge/config.json`, then `/etc/tallybridge/config.json`.
 
 ## Real ATEM mode
 
@@ -70,6 +71,41 @@ In this mode:
 - your bridge connects to the real ATEM at its own IP
 - the bridge sees cuts by watching `programInput` and `previewInput`
 - Hollyland should eventually connect to the bridge IP, not the real ATEM IP
+
+## Installation
+
+### Raspberry Pi / Debian
+
+Release builds publish a `.deb` asset and expect a working `node` runtime on the target machine.
+
+Typical install flow:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y nodejs
+sudo apt install ./tallybridge_0.1.0_all.deb
+sudo cp /etc/tallybridge/config.example.json /etc/tallybridge/config.json
+sudo systemctl enable --now tallybridge
+```
+
+The installed service reads config from `/etc/tallybridge/config.json`.
+
+### macOS with Homebrew
+
+Release builds also publish:
+
+- `tallybridge-<version>-bundle.tar.gz`
+- `tallybridge.rb`
+
+Install from a release asset URL:
+
+```bash
+brew install https://github.com/lcorneliussen/tallybridge/releases/download/v0.1.0/tallybridge.rb
+cp "$(brew --prefix)/etc/tallybridge/config.example.json" "$(brew --prefix)/etc/tallybridge/config.json"
+brew services start tallybridge
+```
+
+The Homebrew service reads config from `$(brew --prefix)/etc/tallybridge/config.json` unless `CONFIG_PATH` is set.
 
 ## Shim behavior
 
