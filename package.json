@@ -16,7 +16,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc --project tsconfig.json",
     "start": "node dist/src/index.js",
-    "test": "node --import tsx --test test/**/*.test.ts",
+    "test": "node --import tsx --test test/*.test.ts",
     "pack:bundle": "bash scripts/build-release-bundle.sh",
     "pack:deb": "bash scripts/build-deb.sh"
   },
