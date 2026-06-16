@@ -1,9 +1,9 @@
 class Tallybridge < Formula
   desc "ATEM-to-Hollyland tally bridge prototype"
   homepage "https://github.com/lcorneliussen/tallybridge"
-  url "https://github.com/lcorneliussen/tallybridge/releases/download/v0.1.0/tallybridge-0.1.0-bundle.tar.gz"
-  sha256 "af2a42be93ee491394b4740394c1076dcf6c9c2539e46d151857bf19e897ee76"
-  version "0.1.0"
+  url "https://github.com/lcorneliussen/tallybridge/releases/download/v0.1.1/tallybridge-0.1.1-bundle.tar.gz"
+  sha256 "bf37808e7558935a3cf22487cad2409372fa8733f5ca3a8d3015b8624d637189"
+  version "0.1.1"
   depends_on "node"
 
   def install
@@ -30,6 +30,6 @@ class Tallybridge < Formula
   end
 
   test do
-    assert_match "0.1.0", shell_output("#{Formula["node"].opt_bin}/node -p \"require('#{libexec}/package.json').version\"")
+    assert_match "0.1.1", shell_output("#{Formula["node"].opt_bin}/node -p \"require('#{libexec}/package.json').version\"")
   end
 end
