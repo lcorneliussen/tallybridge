@@ -1,3 +1,5 @@
+import { networkInterfaces } from 'node:os'
+
 import { FakeAtemServer } from './atem-shim/FakeAtemServer.js'
 import { loadConfig } from './config.js'
 import { createControlServer } from './http/createControlServer.js'
@@ -32,6 +34,10 @@ async function main(): Promise<void> {
       console.log(
         `Control server listening on http://${config.server.host}:${config.server.port}`
       )
+      const lanIps = detectLanIpv4Addresses()
+      if (lanIps.length > 0) {
+        console.log(`Likely LAN IPs for Hollyland: ${lanIps.join(', ')}`)
+      }
       console.log('Endpoints: GET /state, GET /shim/status, GET /probe/status, GET /events, POST /probe/variant/:name, POST /program/:id, POST /preview/:id, POST /cut, POST /auto/start, POST /auto/stop')
       console.log(`Source mode: ${config.source.type}`)
       if (shim) {
@@ -76,4 +82,14 @@ function buildSource(config: Awaited<ReturnType<typeof loadConfig>>): SwitcherSo
   }
 
   return new SimulatedSwitcherSource(config.source.simulator)
+}
+
+function detectLanIpv4Addresses(): string[] {
+  const interfaces = networkInterfaces()
+  const addresses = Object.values(interfaces)
+    .flatMap((entries) => entries ?? [])
+    .filter((entry) => entry.family === 'IPv4' && !entry.internal)
+    .map((entry) => entry.address)
+
+  return Array.from(new Set(addresses))
 }

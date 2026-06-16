@@ -49,7 +49,10 @@ jobs:
         env:
           OWNER: ${{ github.repository_owner }}
           REPO: ${{ github.event.repository.name }}
-        run: bash scripts/render-homebrew-formula.sh
+        run: bash scripts/render-homebrew-formula.sh out/tallybridge.rb
+
+      - name: Stash Homebrew formula for tap update
+        run: cp out/tallybridge.rb "$RUNNER_TEMP/tallybridge.rb"
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
@@ -59,3 +62,21 @@ jobs:
             out/*.tar.gz
             out/*.deb
             out/*.rb
+
+      - name: Update tapped Homebrew formula on main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git checkout main
+          mkdir -p Formula
+          cp "$RUNNER_TEMP/tallybridge.rb" Formula/tallybridge.rb
+
+          if git diff --quiet -- Formula/tallybridge.rb; then
+            echo "Formula already up to date"
+            exit 0
+          fi
+
+          git add Formula/tallybridge.rb
+          git commit -m "Update Homebrew formula for ${GITHUB_REF_NAME}"
+          git push origin main

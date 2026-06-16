@@ -6,6 +6,8 @@ Prototype bridge for two roles:
 - expose a separate Hollyland-facing ATEM-like UDP service from this machine's IP
 - translate Program/Preview state into tally updates
 
+This project is aimed at retrofitting older ATEM switchers for [Hollyland Wireless Tally System](https://www.hollyland.com/product/wireless-tally-system) Ethernet tally workflows. It has been tested at least against an [ATEM Production Studio 4K](https://forum.blackmagicdesign.com/viewtopic.php?f=13&t=6790) as the upstream real switcher, while presenting a newer [ATEM Constellation 8K](https://www.blackmagicdesign.com/products/atemconstellation8k/features) identity toward the Hollyland side.
+
 The app now supports two upstream source modes:
 
 - `simulator`: local ATEM-style switching for development
@@ -72,6 +74,11 @@ In this mode:
 - the bridge sees cuts by watching `programInput` and `previewInput`
 - Hollyland should eventually connect to the bridge IP, not the real ATEM IP
 
+Known tested retrofit path:
+
+- upstream real switcher: [`ATEM Production Studio 4K`](https://forum.blackmagicdesign.com/viewtopic.php?f=13&t=6790)
+- downstream presented identity: [`ATEM Constellation 8K`](https://www.blackmagicdesign.com/products/atemconstellation8k/features)
+
 ## Installation
 
 ### Raspberry Pi / Debian
@@ -83,7 +90,7 @@ Typical install flow:
 ```bash
 sudo apt-get update
 sudo apt-get install -y nodejs
-sudo apt install ./tallybridge_0.1.0_all.deb
+sudo apt install ./tallybridge_<version>_all.deb
 sudo cp /etc/tallybridge/config.example.json /etc/tallybridge/config.json
 sudo systemctl enable --now tallybridge
 ```
@@ -92,20 +99,18 @@ The installed service reads config from `/etc/tallybridge/config.json`.
 
 ### macOS with Homebrew
 
-Release builds also publish:
-
-- `tallybridge-<version>-bundle.tar.gz`
-- `tallybridge.rb`
-
-Install from a release asset URL:
+Tap this repository and install the formula from its tracked `Formula/` directory:
 
 ```bash
-brew install https://github.com/lcorneliussen/tallybridge/releases/download/v0.1.0/tallybridge.rb
+brew tap lcorneliussen/tallybridge https://github.com/lcorneliussen/tallybridge
+brew install lcorneliussen/tallybridge/tallybridge
 cp "$(brew --prefix)/etc/tallybridge/config.example.json" "$(brew --prefix)/etc/tallybridge/config.json"
 brew services start tallybridge
 ```
 
 The Homebrew service reads config from `$(brew --prefix)/etc/tallybridge/config.json` unless `CONFIG_PATH` is set.
+
+This uses the formula in [`Formula/tallybridge.rb`](https://github.com/lcorneliussen/tallybridge/blob/main/Formula/tallybridge.rb), which points to the tagged release bundle and includes the required SHA-256 checksum. Installing a standalone formula file from a release URL is no longer a reliable Homebrew path.
 
 ## Shim behavior
 
