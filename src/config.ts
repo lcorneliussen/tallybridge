@@ -32,6 +32,13 @@ export interface AppConfig {
   }
 }
 
+export interface ConfigLoadDetails {
+  config: AppConfig
+  loadedFrom?: string
+  usedDefaults: boolean
+  warnings: string[]
+}
+
 type LegacyAppConfig = {
   server?: Partial<AppConfig['server']>
   probes?: Partial<AppConfig['probes']>
@@ -90,13 +97,25 @@ const defaultConfig: AppConfig = {
 }
 
 export async function loadConfig(configPath?: string): Promise<AppConfig> {
+  const details = await loadConfigWithDetails(configPath)
+  return details.config
+}
+
+export async function loadConfigWithDetails(
+  configPath?: string
+): Promise<ConfigLoadDetails> {
   const resolvedPaths = buildConfigSearchPaths(configPath)
 
   for (const resolvedPath of resolvedPaths) {
     try {
       const rawConfig = await readFile(resolvedPath, 'utf8')
       const parsed = JSON.parse(rawConfig) as LegacyAppConfig
-      return mergeConfig(parsed)
+      return {
+        config: mergeConfig(parsed),
+        loadedFrom: resolvedPath,
+        usedDefaults: false,
+        warnings: deriveConfigWarnings(parsed)
+      }
     } catch (error) {
       const isMissing =
         typeof error === 'object' &&
@@ -112,7 +131,11 @@ export async function loadConfig(configPath?: string): Promise<AppConfig> {
     }
   }
 
-  return structuredClone(defaultConfig)
+  return {
+    config: structuredClone(defaultConfig),
+    usedDefaults: true,
+    warnings: []
+  }
 }
 
 function mergeConfig(parsed: LegacyAppConfig): AppConfig {
@@ -202,4 +225,22 @@ function buildConfigSearchPaths(configPath?: string): string[] {
   return candidates.filter((candidate, index): candidate is string => {
     return typeof candidate === 'string' && candidates.indexOf(candidate) === index
   })
+}
+
+function deriveConfigWarnings(parsed: LegacyAppConfig): string[] {
+  const warnings: string[] = []
+
+  if (parsed.source?.atem && parsed.source?.type !== 'atem') {
+    warnings.push(
+      'Config contains source.atem settings, but source.type is not set to "atem". The app will fall back to simulator mode unless you add "source": { "type": "atem", ... }.'
+    )
+  }
+
+  if (parsed.probes?.enabled === false && parsed.shim?.enabled === false) {
+    warnings.push(
+      'Both probes and shim are disabled. Hollyland clients will not have any bridge-facing listener to connect to.'
+    )
+  }
+
+  return warnings
 }

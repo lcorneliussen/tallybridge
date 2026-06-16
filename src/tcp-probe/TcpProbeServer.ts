@@ -1,5 +1,6 @@
 import net, { type Socket } from 'node:net'
 
+import { wrapListenerError } from '../startup/diagnostics.js'
 import type { SwitcherSource } from '../switcher/contracts.js'
 import type { SwitcherSnapshot } from '../switcher/types.js'
 
@@ -162,9 +163,20 @@ export class TcpProbeServer {
     })
 
     await new Promise<void>((resolve, reject) => {
-      server.once('error', reject)
+      const onError = (error: Error) => {
+        reject(
+          wrapListenerError(error, {
+            component: 'TCP probe server',
+            protocol: 'tcp',
+            host: this.options.host,
+            port
+          })
+        )
+      }
+
+      server.once('error', onError)
       server.listen(port, this.options.host, () => {
-        server.off('error', reject)
+        server.off('error', onError)
         console.log(`[probe] listening on tcp://${this.options.host}:${port}`)
         resolve()
       })

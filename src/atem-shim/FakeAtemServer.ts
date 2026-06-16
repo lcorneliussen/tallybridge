@@ -5,6 +5,7 @@ import {
   buildStateChangeCommands,
   type AtemIdentityConfig
 } from './commands.js'
+import { wrapListenerError } from '../startup/diagnostics.js'
 import { SwitcherSource } from '../switcher/contracts.js'
 
 const MAX_PACKET_ID = 1 << 15
@@ -91,9 +92,20 @@ export class FakeAtemServer {
     })
 
     await new Promise<void>((resolve, reject) => {
-      this.socket.once('error', reject)
+      const onError = (error: Error) => {
+        reject(
+          wrapListenerError(error, {
+            component: 'ATEM shim',
+            protocol: 'udp',
+            host: this.options.host,
+            port: this.options.port
+          })
+        )
+      }
+
+      this.socket.once('error', onError)
       this.socket.bind(this.options.port, this.options.host, () => {
-        this.socket.off('error', reject)
+        this.socket.off('error', onError)
         this.listening = true
         resolve()
       })
