@@ -12,6 +12,8 @@ export interface SwitcherSnapshot {
   inputs: SwitcherInput[]
   programInput: number
   previewInput: number
+  programTallyInputs: number[]
+  previewTallyInputs: number[]
   autoSwitching: boolean
   cycleCount: number
   updatedAt: string

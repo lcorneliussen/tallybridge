@@ -46,6 +46,8 @@ export class SimulatedSwitcherSource extends SwitcherSource {
       inputs: options.inputs,
       programInput: startProgramInput,
       previewInput: startPreviewInput,
+      programTallyInputs: [startProgramInput],
+      previewTallyInputs: [startPreviewInput],
       autoSwitching: false,
       cycleCount: 0,
       updatedAt: new Date().toISOString()
@@ -180,6 +182,8 @@ export class SimulatedSwitcherSource extends SwitcherSource {
 
     this.snapshot.programInput = nextProgramInput
     this.snapshot.previewInput = nextPreviewInput
+    this.snapshot.programTallyInputs = [nextProgramInput]
+    this.snapshot.previewTallyInputs = [nextPreviewInput]
     if (incrementCycleCount) {
       this.snapshot.cycleCount += 1
     }

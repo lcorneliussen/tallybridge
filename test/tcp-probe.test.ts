@@ -4,7 +4,9 @@ import test from 'node:test'
 import { once } from 'node:events'
 
 import { TcpProbeServer } from '../src/tcp-probe/TcpProbeServer.js'
+import { SwitcherSource } from '../src/switcher/contracts.js'
 import { SimulatedSwitcherSource } from '../src/switcher/SimulatedSwitcherSource.js'
+import type { SwitcherSnapshot } from '../src/switcher/types.js'
 
 function buildSimulator() {
   return new SimulatedSwitcherSource({
@@ -21,6 +23,42 @@ function buildSimulator() {
       tallyChannel: id
     }))
   })
+}
+
+function buildSnapshot(overrides: Partial<SwitcherSnapshot> = {}): SwitcherSnapshot {
+  return {
+    connected: true,
+    source: 'atem',
+    modelName: 'Test ATEM',
+    inputs: [1, 2, 3, 4].map((id) => ({
+      id,
+      name: `Cam ${id}`,
+      longName: `Camera ${id}`,
+      tallyChannel: id
+    })),
+    programInput: 1,
+    previewInput: 2,
+    programTallyInputs: [1],
+    previewTallyInputs: [2],
+    autoSwitching: false,
+    cycleCount: 0,
+    updatedAt: new Date().toISOString(),
+    ...overrides
+  }
+}
+
+class StaticSwitcherSource extends SwitcherSource {
+  constructor(private snapshot: SwitcherSnapshot) {
+    super()
+  }
+
+  async start(): Promise<void> {}
+
+  async stop(): Promise<void> {}
+
+  getSnapshot(): SwitcherSnapshot {
+    return structuredClone(this.snapshot)
+  }
 }
 
 async function connect(port: number): Promise<net.Socket> {
@@ -152,6 +190,48 @@ test('vmix probe mode pushes tally updates immediately on state changes', async 
       const pushedTally = await pushedRead
 
       assert.match(pushedTally, /TALLY OK 0120\r\n/)
+    } finally {
+      tallySocket.end()
+    }
+  } finally {
+    await probes.stop()
+    await source.stop()
+  }
+})
+
+test('vmix probe mode marks ATEM keyer-visible inputs as program', async () => {
+  const source = new StaticSwitcherSource(
+    buildSnapshot({
+      programInput: 1,
+      previewInput: 2,
+      programTallyInputs: [1, 3],
+      previewTallyInputs: [2]
+    })
+  )
+  await source.start()
+  const tallyPort = await getFreePort()
+  const heartbeatPort = await getFreePort()
+
+  const probes = new TcpProbeServer(
+    {
+      host: '127.0.0.1',
+      ports: [tallyPort, heartbeatPort],
+      responseVariant: 'vmix'
+    },
+    source
+  )
+
+  await probes.start()
+
+  try {
+    const tallySocket = await connect(tallyPort)
+
+    try {
+      const tallyRead = readUntil(tallySocket, 'TALLY OK 1210\r\n')
+      tallySocket.write('TALLY\r\n')
+      const tallyResponse = await tallyRead
+
+      assert.match(tallyResponse, /TALLY OK 1210\r\n/)
     } finally {
       tallySocket.end()
     }

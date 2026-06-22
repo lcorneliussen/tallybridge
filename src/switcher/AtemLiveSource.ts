@@ -1,7 +1,8 @@
-import { Atem, Enums, type AtemState } from 'atem-connection'
+import { Atem, Enums, listVisibleInputs, type AtemState } from 'atem-connection'
 
 import { SwitcherSource } from './contracts.js'
 import type { SwitcherChange, SwitcherInput, SwitcherSnapshot } from './types.js'
+import { normalizeTallyInputs } from './tally.js'
 
 export interface AtemLiveSourceOptions {
   host: string
@@ -27,6 +28,12 @@ export class AtemLiveSource extends SwitcherSource {
       inputs: fallbackInputs,
       programInput: fallbackInputs[0]?.id ?? 0,
       previewInput: fallbackInputs[1]?.id ?? fallbackInputs[0]?.id ?? 0,
+      programTallyInputs: fallbackInputs[0]?.id ? [fallbackInputs[0].id] : [],
+      previewTallyInputs: fallbackInputs[1]?.id
+        ? [fallbackInputs[1].id]
+        : fallbackInputs[0]?.id
+          ? [fallbackInputs[0].id]
+          : [],
       autoSwitching: false,
       cycleCount: 0,
       updatedAt: new Date().toISOString()
@@ -51,8 +58,9 @@ export class AtemLiveSource extends SwitcherSource {
 
     await this.atem.connect(this.options.host, this.options.port)
 
-    if (this.atem.state) {
-      this.updateFromAtemState(this.atem.state)
+    const hydratedState = await this.waitForHydratedState()
+    if (hydratedState) {
+      this.updateFromAtemState(hydratedState)
     } else {
       this.emitState('initial')
     }
@@ -101,6 +109,18 @@ export class AtemLiveSource extends SwitcherSource {
       inputs: extractInputs(state, this.options.fallbackInputs ?? []),
       programInput: mixEffect.programInput,
       previewInput: mixEffect.previewInput,
+      programTallyInputs: extractVisibleInputs(
+        'program',
+        state,
+        this.options.mixEffect,
+        mixEffect.programInput
+      ),
+      previewTallyInputs: extractVisibleInputs(
+        'preview',
+        state,
+        this.options.mixEffect,
+        mixEffect.previewInput
+      ),
       autoSwitching: false,
       cycleCount: this.stateChangeCount,
       updatedAt: new Date().toISOString()
@@ -125,6 +145,21 @@ export class AtemLiveSource extends SwitcherSource {
       previousPreviewInput: this.snapshot.previewInput
     })
   }
+
+  private async waitForHydratedState(): Promise<AtemState | undefined> {
+    const deadline = Date.now() + 5000
+
+    while (Date.now() < deadline) {
+      const state = this.atem.state
+      if (state?.video.mixEffects[this.options.mixEffect]) {
+        return state
+      }
+
+      await sleep(100)
+    }
+
+    return this.atem.state
+  }
 }
 
 function extractInputs(state: AtemState, fallbackInputs: SwitcherInput[]): SwitcherInput[] {
@@ -139,4 +174,17 @@ function extractInputs(state: AtemState, fallbackInputs: SwitcherInput[]): Switc
     .sort((left, right) => left.id - right.id)
 
   return inputs.length > 0 ? inputs : fallbackInputs
+}
+
+function extractVisibleInputs(
+  mode: 'program' | 'preview',
+  state: AtemState,
+  mixEffect: number,
+  fallbackInput: number
+): number[] {
+  return normalizeTallyInputs(listVisibleInputs(mode, state, mixEffect), fallbackInput)
+}
+
+function sleep(durationMs: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, durationMs))
 }

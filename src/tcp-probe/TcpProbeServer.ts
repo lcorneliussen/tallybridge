@@ -3,6 +3,7 @@ import net, { type Socket } from 'node:net'
 import { wrapListenerError } from '../startup/diagnostics.js'
 import type { SwitcherSource } from '../switcher/contracts.js'
 import type { SwitcherSnapshot } from '../switcher/types.js'
+import { isPreviewTallyInput, isProgramTallyInput } from '../switcher/tally.js'
 
 export interface TcpProbeServerOptions {
   host: string
@@ -463,9 +464,9 @@ function renderTallySnapshot(snapshot: SwitcherSnapshot): string {
     `PREVIEW:${snapshot.previewInput}`,
     ...snapshot.inputs.map((input) => {
       const state =
-        input.id === snapshot.programInput
+        isProgramTallyInput(snapshot, input.id)
           ? 'PGM'
-          : input.id === snapshot.previewInput
+          : isPreviewTallyInput(snapshot, input.id)
             ? 'PVW'
             : 'OFF'
       return `INPUT:${input.id}:${state}`
@@ -484,11 +485,11 @@ function renderVmixTallyStates(snapshot: SwitcherSnapshot): string {
   return snapshot.inputs
     .filter((input) => input.id > 0)
     .map((input) => {
-      if (input.id === snapshot.programInput) {
+      if (isProgramTallyInput(snapshot, input.id)) {
         return '1'
       }
 
-      if (input.id === snapshot.previewInput) {
+      if (isPreviewTallyInput(snapshot, input.id)) {
         return '2'
       }
 
@@ -513,13 +514,13 @@ function renderVmixActsResponse(command: string, snapshot: SwitcherSnapshot): st
 
   if (activatorName === 'Input') {
     const inputNumber = inputNumberText ? Number.parseInt(inputNumberText, 10) : snapshot.programInput
-    const value = inputNumber === snapshot.programInput ? 1 : 0
+    const value = isProgramTallyInput(snapshot, inputNumber) ? 1 : 0
     return `ACTS OK Input ${inputNumber} ${value}\r\n`
   }
 
   if (activatorName === 'InputPreview') {
     const inputNumber = inputNumberText ? Number.parseInt(inputNumberText, 10) : snapshot.previewInput
-    const value = inputNumber === snapshot.previewInput ? 1 : 0
+    const value = isPreviewTallyInput(snapshot, inputNumber) ? 1 : 0
     return `ACTS OK InputPreview ${inputNumber} ${value}\r\n`
   }
 

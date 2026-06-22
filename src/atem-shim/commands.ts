@@ -1,6 +1,7 @@
 import { Enums } from 'atem-connection'
 
 import type { SwitcherInput, SwitcherSnapshot } from '../switcher/types.js'
+import { isPreviewTallyInput, isProgramTallyInput } from '../switcher/tally.js'
 
 export interface AtemIdentityConfig {
   productIdentifier: string
@@ -126,10 +127,10 @@ function encodeTallyBySource(snapshot: SwitcherSnapshot): Buffer {
     payload.writeUInt16BE(input.id, offset)
 
     let flags = 0
-    if (input.id === snapshot.programInput) {
+    if (isProgramTallyInput(snapshot, input.id)) {
       flags |= 0x01
     }
-    if (input.id === snapshot.previewInput) {
+    if (isPreviewTallyInput(snapshot, input.id)) {
       flags |= 0x02
     }
 

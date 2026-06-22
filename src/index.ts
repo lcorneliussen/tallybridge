@@ -30,7 +30,7 @@ async function main(): Promise<void> {
 
   source.on('stateChanged', (snapshot, change) => {
     console.log(
-      `[${snapshot.source}:${change.reason}] program=${snapshot.programInput} preview=${snapshot.previewInput} auto=${snapshot.autoSwitching} connected=${snapshot.connected}`
+      `[${snapshot.source}:${change.reason}] program=${snapshot.programInput} preview=${snapshot.previewInput} programTally=${formatTallyInputs(snapshot.programTallyInputs)} previewTally=${formatTallyInputs(snapshot.previewTallyInputs)} auto=${snapshot.autoSwitching} connected=${snapshot.connected}`
     )
   })
 
@@ -124,4 +124,8 @@ function detectLanIpv4Addresses(): string[] {
     .map((entry) => entry.address)
 
   return Array.from(new Set(addresses))
+}
+
+function formatTallyInputs(inputIds: number[]): string {
+  return `[${inputIds.join(',')}]`
 }

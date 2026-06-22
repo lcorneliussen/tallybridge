@@ -4,14 +4,14 @@ Prototype bridge for two roles:
 
 - read Program/Preview state from a real ATEM switcher
 - expose a separate Hollyland-facing ATEM-like UDP service from this machine's IP
-- translate Program/Preview state into tally updates
+- translate Program/Preview visibility into tally updates
 
 This project is aimed at retrofitting older ATEM switchers for [Hollyland Wireless Tally System](https://www.hollyland.com/product/wireless-tally-system) Ethernet tally workflows. It has been tested at least against an [ATEM Production Studio 4K](https://forum.blackmagicdesign.com/viewtopic.php?f=13&t=6790) as the upstream real switcher, while presenting a newer [ATEM Constellation 8K](https://www.blackmagicdesign.com/products/atemconstellation8k/features) identity toward the Hollyland side.
 
 The app now supports two upstream source modes:
 
 - `simulator`: local ATEM-style switching for development
-- `atem`: connect to a real ATEM over the network and mirror its Program/Preview state
+- `atem`: connect to a real ATEM over the network and mirror its Program/Preview tally visibility
 
 It also starts a minimal fake ATEM shim on UDP `9910`. That shim is intentionally narrow:
 
@@ -19,7 +19,7 @@ It also starts a minimal fake ATEM shim on UDP `9910`. That shim is intentionall
 - reports a configurable ATEM identity
 - publishes input metadata
 - publishes Program/Preview state
-- publishes tally-by-source updates when cuts happen
+- publishes tally-by-source updates when switcher state changes
 
 It also starts passive TCP probe listeners on `8099` and `9990` so you can observe non-ATEM Hollyland connection attempts.
 
@@ -71,7 +71,8 @@ npm start
 In this mode:
 
 - your bridge connects to the real ATEM at its own IP
-- the bridge sees cuts by watching `programInput` and `previewInput`
+- the bridge keeps `programInput` and `previewInput` for control state
+- tally output follows ATEM visible-input logic, including active upstream/downstream keyer sources
 - Hollyland should eventually connect to the bridge IP, not the real ATEM IP
 
 Known tested retrofit path:
@@ -143,6 +144,7 @@ In `vmix` mode:
 
 - `8099` answers `TALLY` with `TALLY OK <digits>\r\n`
 - each digit is `0` for off, `1` for program, `2` for preview
+- active ATEM keyer sources are reported as program when ATEM says they are visible on air
 - tally updates are also pushed immediately on state changes to reduce Hollyland latency
 - `9990` still answers the Hollyland heartbeat with `PONG`
 

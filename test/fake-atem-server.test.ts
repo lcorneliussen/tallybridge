@@ -3,8 +3,10 @@ import test from 'node:test'
 
 import { Atem } from 'atem-connection'
 
+import { buildStateChangeCommands } from '../src/atem-shim/commands.js'
 import { FakeAtemServer } from '../src/atem-shim/FakeAtemServer.js'
 import { SimulatedSwitcherSource } from '../src/switcher/SimulatedSwitcherSource.js'
+import type { SwitcherSnapshot } from '../src/switcher/types.js'
 
 test('fake atem server exposes simulator state to an atem client', async () => {
   const simulator = new SimulatedSwitcherSource({
@@ -78,3 +80,52 @@ test('fake atem server exposes simulator state to an atem client', async () => {
     await simulator.stop()
   }
 })
+
+test('fake atem tally-by-source uses effective program and preview tally inputs', () => {
+  const snapshot: SwitcherSnapshot = {
+    connected: true,
+    source: 'atem',
+    modelName: 'Test ATEM',
+    inputs: [1, 2, 3, 4].map((id) => ({
+      id,
+      name: `C${id}`,
+      longName: `Camera ${id}`,
+      tallyChannel: id
+    })),
+    programInput: 1,
+    previewInput: 2,
+    programTallyInputs: [1, 3],
+    previewTallyInputs: [2, 4],
+    autoSwitching: false,
+    cycleCount: 0,
+    updatedAt: new Date().toISOString()
+  }
+
+  const commands = buildStateChangeCommands(snapshot)
+  const tallyCommand = commands.find((command) => command.toString('ascii', 4, 8) === 'TlSr')
+
+  assert.ok(tallyCommand)
+  assert.deepEqual(decodeTallyBySource(tallyCommand), {
+    1: { program: true, preview: false },
+    2: { program: false, preview: true },
+    3: { program: true, preview: false },
+    4: { program: false, preview: true }
+  })
+})
+
+function decodeTallyBySource(command: Buffer): Record<number, { program: boolean; preview: boolean }> {
+  const sourceCount = command.readUInt16BE(8)
+  const result: Record<number, { program: boolean; preview: boolean }> = {}
+
+  for (let index = 0; index < sourceCount; index += 1) {
+    const offset = 10 + index * 3
+    const source = command.readUInt16BE(offset)
+    const flags = command.readUInt8(offset + 2)
+    result[source] = {
+      program: (flags & 0x01) > 0,
+      preview: (flags & 0x02) > 0
+    }
+  }
+
+  return result
+}
